@@ -83,7 +83,7 @@ module Jekyll
 
       if img
         if img['src'] =~ /mp4$/
-          %{<video width='' height='' preload='none' controls poster=''><source src='#{img['src']}' type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'></video>}
+          %{<video width='#{img['width']}' height='#{img['height']}' preload='none' controls poster=''><source src='#{img['src']}' type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'></video>}
         else
           "<img #{img.map {|property,value| "#{property}=\"#{value}\"" if value}.join(" ")}>"
         end
