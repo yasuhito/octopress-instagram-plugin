@@ -88,7 +88,7 @@ module Jekyll
           %{<video width='300' height='300' preload='none' controls poster=''><source src='#{img['src']}' type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'></video>}
         else
           "<img #{img.map {|property,value| "#{property}=\"#{value}\"" if value}.join(" ")}>"
-        end + %{\n<br/><br/><a href="#{original_url}">#{img['title']}</a>}
+        end + %{\n\n<a href="#{original_url}">#{original_url}</a> by <a href="#{instagram['author_url']}">#{instagram['author_name']}</a>}
       else
         ""
       end
