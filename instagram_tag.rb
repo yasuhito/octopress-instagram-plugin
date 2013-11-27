@@ -68,6 +68,8 @@ module Jekyll
           tmp
         }
 
+        original_url = img['src']
+
         InstagramResultCache.instance.setup(context)
         instagram = InstagramResultCache.instance.get_instagram_by_url(img['src'])
         img['src'] = instagram.fetch('url', nil)
@@ -86,7 +88,7 @@ module Jekyll
           %{<video width='300' height='300' preload='none' controls poster=''><source src='#{img['src']}' type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'></video>}
         else
           "<img #{img.map {|property,value| "#{property}=\"#{value}\"" if value}.join(" ")}>"
-        end + %{\n<a href="#{img['src']}">#{img['title']}</a>}
+        end + %{\n<br/><br/><a href="#{original_url}">#{img['title']}</a>}
       else
         ""
       end
