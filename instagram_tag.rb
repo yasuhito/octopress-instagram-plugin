@@ -1,77 +1,55 @@
-require 'open-uri'
+require 'English'
 require 'json'
+require 'open-uri'
+require 'singleton'
 
 module Jekyll
-
-  class InstagramResultCache
+  # Caches instagram query results.
+  class InstagramCache
+    include Singleton
 
     def initialize
-      @result_cache = {}
-
-      @cache = false
-      @cache_dir = ".instagram-cache/"
+      @cache = {}
     end
 
-    @@instance = InstagramResultCache.new
-
-    def self.instance
-      @@instance
-    end
-
-    def setup(context)
-      site = context.registers[:site]
-
-      #cache_dir
-      @cache = site.config['instagram_cache'] if site.config['instagram_cache']
-      @cache_dir = site.config['instagram_cache_dir'].gsub(/\/$/, '') + '/' if site.config['instagram_cache_dir']
-      Dir::mkdir(@cache_dir) if File.exists?(@cache_dir) == false
-    end
-
-    def get_instagram_by_url(url)
-      code = get_code_by_url(url)
-      return @result_cache[code] if @result_cache.has_key?(code)
-      return @result_cache[code] = JSON.parse(File.read(@cache_dir + code)) if @cache && File.exist?(@cache_dir + code)
-
+    def get_by_url(url)
+      instagram_id = extract_id_from(url)
+      return @cache[instagram_id] if @cache.key?(instagram_id)
       url = 'http://api.instagram.com/oembed?url=' + url
-      data = JSON.parse(open(url).read)
-      @result_cache[code] = data
-      open(@cache_dir + code, "w"){|f| f.write(JSON.generate(data))} if @cache
-
-      return @result_cache[code]
+      @cache[instagram_id] = JSON.parse(open(url).read)
     end
 
-    def get_code_by_url(url)
+    private
+
+    def extract_id_from(url)
       if url =~ %r|http://instagram.com/p/(\w+)/?|
         $1
       else
-        raise "parametor error for instagram tag"
+        fail 'parametor error for instagram tag'
       end
     end
-
-    private_class_method :new
   end
 
+  # Octopress 'instagram' tag.
   class InstagramTag < Liquid::Tag
-
     def initialize(name, params, token)
       super
       @params = params
     end
 
     def render(context)
-      attributes = ['class', 'src', 'width', 'height', 'title']
+      attributes = %w(class src width height title)
       img = nil
 
       if @params =~ /(?<class>\S.*\s+)?(?<src>https?:\/\/\S+)(?:\s+(?<width>\d+))?(?:\s+(?<height>\d+))?(?<title>\s+.+)?/i
-        img = attributes.reduce({}) { |tmp, attr|
-          tmp[attr] = $~[attr].strip if $~[attr];
+        img = attributes.reduce({}) do |tmp, attr|
+          tmp[attr] = $LAST_MATCH_INFO[attr].strip if $LAST_MATCH_INFO[attr]
           tmp
-        }
+        end
 
         original_url = img['src']
 
-        InstagramResultCache.instance.setup(context)
-        instagram = InstagramResultCache.instance.get_instagram_by_url(img['src'])
+        instagram = InstagramCache.instance.get_by_url(img['src'])
         img['src'] = instagram.fetch('url', nil)
 
         img['width'] = instagram['width']
@@ -90,14 +68,13 @@ module Jekyll
         if img['src'] =~ /mp4$/
           %{<video width='#{instagram["width"]}' height='#{instagram["height"]}' preload='metadata' controls poster=''><source src='#{img['src']}' type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'></video>}
         else
-          "<img #{img.map {|property,value| "#{property}=\"#{value}\"" if value}.join(" ")}>"
+          "<img #{img.map { |property, value| "#{property}=\"#{value}\"" if value }.join(" ")}>"
         end + %{\n\n<a href="#{original_url}">#{original_url}</a> by <a href="#{instagram['author_url']}">#{instagram['author_name']}</a>}
       else
-        ""
+        ''
       end
     end
   end
-
 end
 
 Liquid::Template.register_tag('instagram', Jekyll::InstagramTag)
