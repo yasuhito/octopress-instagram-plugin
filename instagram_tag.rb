@@ -38,10 +38,10 @@ module Jekyll
     end
 
     def render(context)
-      attributes = %w(class src width height title)
+      attributes = %w(src title)
       img = nil
 
-      if @params =~ /(?<class>\S.*\s+)?(?<src>https?:\/\/\S+)(?:\s+(?<width>\d+))?(?:\s+(?<height>\d+))?(?<title>\s+.+)?/i
+      if @params =~ /(?<src>https?:\/\/\S+)(?<title>\s+.+)?/i
         img = attributes.reduce({}) do |tmp, attr|
           tmp[attr] = $LAST_MATCH_INFO[attr].strip if $LAST_MATCH_INFO[attr]
           tmp
@@ -61,7 +61,6 @@ module Jekyll
           img['title'] = instagram['title']
           img['alt']   = instagram['title']
         end
-        img['class'].gsub!(/"/, '') if img['class']
       end
 
       if img
